@@ -6,6 +6,7 @@ USER_GID=${USER_GID:-1000}
 
 BROWSER_BOX_USER=${BROWSER_BOX_USER:-browser}
 BROWSER_BOX_REPO=${BROWSER_BOX_REPO:-sameersbn}
+BROWSER_BOX_VERSION=${BROWSER_BOX_VERSION:-1.0.1}
 
 install_browser_box() {
   echo "Installing browser-box..."
@@ -25,6 +26,10 @@ install_browser_box() {
   if [ "${BROWSER_BOX_USER}" != "browser" ] && [ -n "${BROWSER_BOX_USER}" ]; then
     echo "Updating user to ${BROWSER_BOX_USER}..."
     sed -i -e s%"BROWSER_BOX_USER:-browser"%"BROWSER_BOX_USER:-${BROWSER_BOX_USER}"%1 /target/browser-box
+  fi
+  if [[ -n "${BROWSER_BOX_VERSION}" ]]; then
+    echo "Updating version to ${BROWSER_BOX_VERSION}..."
+    sed -i -e s%"BROWSER_BOX_VERSION:-.*$"%"BROWSER_BOX_VERSION:-${BROWSER_BOX_VERSION}}"%1 /target/browser-box
   fi
   if [[ -n "${CHROME_USERDATA}" ]]; then
     echo "Updating Chrome user volume..."
@@ -56,6 +61,14 @@ uninstall_browser_box() {
 }
 
 create_user() {
+  exist=$(getent passwd ${USER_UID} >/dev/null 2>&1 || echo false)
+  if [ x${exist} != "xfalse" ]; then
+    echo "Warning: User ID ${USER_UID} exists in Browser Box"
+    BROWSER_BOX_USER=$(getent passwd ${USER_UID} | cut -d ":" -f 1)
+    if [ ! -d /home/${BROWSER_BOX_USER} ]; then
+      mkdir /home/${BROWSER_BOX_USER}
+    fi
+  fi
   # ensure home directory is owned by browser
   # and that profile files exist
   if [[ -d /home/${BROWSER_BOX_USER} ]]; then
@@ -65,9 +78,9 @@ create_user() {
     cp /etc/skel/.bash_logout /home/${BROWSER_BOX_USER}
     cp /etc/skel/.profile /home/${BROWSER_BOX_USER}
     chown ${USER_UID}:${USER_GID} \
-		/home/${BROWSER_BOX_USER}/.bashrc \
-		/home/${BROWSER_BOX_USER}/.profile \
-		/home/${BROWSER_BOX_USER}/.bash_logout
+        /home/${BROWSER_BOX_USER}/.bashrc \
+        /home/${BROWSER_BOX_USER}/.profile \
+        /home/${BROWSER_BOX_USER}/.bash_logout
   fi
   # create group with USER_GID
   if ! getent group ${BROWSER_BOX_USER} >/dev/null; then
